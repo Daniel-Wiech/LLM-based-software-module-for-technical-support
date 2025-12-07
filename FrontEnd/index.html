@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Asystent techniczny</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">Wirtualny asystent</div>
+    <div id="user-area" class="user-area"></div>
+  </header>
+
+  <main class="app">
+
+    <section id="login-panel" class="panel center">
+      <h2>Logowanie</h2>
+
+      <div class="form-row">
+        <input id="login-login" type="text" placeholder="Login">
+      </div>
+
+      <div class="form-row">
+        <input id="login-password" type="password" placeholder="Hasło">
+      </div>
+
+      <div class="form-row actions">
+        <button id="btn-login" class="primary">Zaloguj</button>
+        <button id="btn-show-register">Zarejestruj użytkownika</button>
+      </div>
+
+      <div id="login-msg" class="small muted"></div>
+    </section>
+
+
+    <section id="main-app" class="hidden">
+
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <button id="btn-new-conv" class="primary">Nowa rozmowa</button>
+        </div>
+
+        <div id="conversations-list" class="conversations-list"></div>
+      </aside>
+
+      <section class="chat-area">
+
+        <div id="chat-header" class="chat-header">Wybierz rozmowę</div>
+
+        <div id="chat-window" class="chat-window"></div>
+
+        <div class="chat-input-area">
+          <input id="chat-input" placeholder="Wpisz wiadomość...">
+          <button id="btn-send" class="primary">Wyślij</button>
+        </div>
+
+      </section>
+
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
+
+WORKDIR /app
+
+# Instalacja zależności
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Kopiujemy pliki do kontenera
+COPY QLoRa.py .
+COPY train.json .
+COPY Training-config.yml .
+#COPY models--CYFRAGOVPL--Llama-PLLuM-8B-chat /app/model
+
+# Katalog, w którym model zostanie zapisany po treningu
+RUN mkdir -p /pllum-lora-model
+VOLUME ["/pllum-lora-model"]
+
+CMD ["python", "QLoRa.py"]

@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:15
+    container_name: llmmodule-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - llm-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "5050:80"
+    volumes:
+      - ./servers.json:/pgadmin4/servers.json
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - llm-net
+
+  app:
+    build: .
+    container_name: llmmodule-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8080:8000" 
+    depends_on:
+      db:
+        condition: service_healthy
+    runtime: nvidia    
+    networks:
+      - llm-net
+    volumes:
+      - ./models--CYFRAGOVPL--Llama-PLLuM-8B-chat:/app/models--CYFRAGOVPL--Llama-PLLuM-8B-chat
+      - ./pllum-lora-model:/app/pllum-lora-model
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/healthcheck | grep ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    image: nginx:alpine
+    container_name: llmmodule-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    volumes:
+      - ./FrontEnd:/usr/share/nginx/html:ro
+    networks:
+      - llm-net
+    
+networks:
+  llm-net:
+    driver: bridge
