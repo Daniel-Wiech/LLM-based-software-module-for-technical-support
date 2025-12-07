@@ -44,7 +44,7 @@ This project implements a **technical support module** using **Large Language Mo
 Before running the project, you need:
 
 1. **Model folder:**  
-   - `models--CYFRAGOVPL--Llama-PLLuM-8B-chat` containing the chat version of the Plum 8B model (16-bit float).  
+   - [`models--CYFRAGOVPL--Llama-PLLuM-8B-chat`](https://huggingface.co/CYFRAGOVPL/Llama-PLLuM-8B-chat) containing the chat version of the Plum 8B model (16-bit float).  
 
 2. **Environment file `.env`:**  
 
