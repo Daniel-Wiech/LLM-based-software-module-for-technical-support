@@ -206,14 +206,6 @@ def logout(req: RefreshRequest):
 @app.get("/healthcheck")
 def healthcheck():
     return {"status": "ready"}
-"""
-while True:
-    user_input = input("Ty: ")
-    if user_input.lower() == "exit":
-        break
-    response = generate_response(user_input)
-    print("Asystent:", response)
-"""
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
