@@ -16,4 +16,3 @@ models--CYFRAGOVPL--Llama-PLLuM-8B-chat/
 pllum-lora-model/
 
 .env
-servers.json
