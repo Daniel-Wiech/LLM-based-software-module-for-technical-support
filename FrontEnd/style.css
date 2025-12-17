@@ -5,7 +5,9 @@
   --accent-2:#243825;
   --danger:#e53935;
   --muted:#174874;
-  --shadow: 0 6px 18px rgba(15,30,40,0.06);
+  --shadow-y: 6px;
+  --shadow-blur: 18px;
+  --shadow-color: rgba(15,30,40,0.06);
   --radius:10px;
 }
 
@@ -17,31 +19,45 @@
   width: 100%;
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
+
+html{
+  height:100%;
+}
+
 body{
   margin:0;
-  font-family:Inter,Segoe UI,Arial, sans-serif;
+  font-family:Segoe UI;
   background:var(--bg);
   color:#111827;
-  min-height:100vh;
+  min-height:100%;
   display:flex;
   flex-direction:column;
 }
 
-
 .topbar{
   height:64px;
-  background:linear-gradient(90deg,#fff,#fafafa);
+  background:#fafafa;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:0 18px;
+  padding-left: 18px;
+  padding-right: 18px;
   border-bottom:1px solid #e6eef3;
   box-shadow: var(--shadow);
 }
-.brand{font-weight:700}
-.user-area{display:flex;gap:10px;align-items:center}
 
+.brand{
+  font-weight:700
+}
+
+.user-login-area{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
 
 .app{
   display:flex;
@@ -49,7 +65,6 @@ body{
   gap:18px;
   padding:20px;
 }
-
 
 .panel.center{
   margin:auto;
@@ -60,7 +75,12 @@ body{
   box-shadow:var(--shadow);
   text-align:center;
 }
-.form-row{margin:8px 0}
+
+.form-row{
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
 input{
   width:100%;
   padding:10px 12px;
@@ -68,9 +88,15 @@ input{
   border:1px solid #d0d7de;
   font-size:14px;
 }
-.actions{display:flex;gap:8px;justify-content:center}
+.actions{
+  display:flex;
+  gap:8px;
+  justify-content:center;
+}
 
-.hidden{display:none !important}
+.hidden{
+  display:none !important;
+}
 
 .sidebar{
   width:320px;
@@ -85,23 +111,44 @@ input{
   overflow:hidden;
 }
 
-.sidebar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.primary{background:var(--accent-2);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
-button{cursor:pointer}
+.sidebar-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:6px;
+}
+
+.primary{
+  background:var(--accent-2);
+  color:#fff;
+  border:none;
+  padding: 8px 12px 8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+button{
+  cursor:pointer;
+}
 
 .conversations-list{
   overflow:auto;
   padding-right:6px;
 }
+
 .conv-item{
   padding:10px;
-  border-radius:8px;
   margin-bottom:8px;
   cursor:pointer;
-  border:1px solid transparent;
 }
-.conv-item:hover{background:#f6fbfb;border-color:#e6f4f4}
-.conv-item.active{background:#eaf8f7;border:1px solid #cdecea}
+
+.conv-item:hover{
+  background:#def0f0;
+}
+
+.conv-item.active{
+  background:#def0f0;
+}
 
 .chat-area{
   flex:1;
@@ -111,6 +158,7 @@ button{cursor:pointer}
   gap:8px;
   height:calc(100vh - 120px);
 }
+
 .chat-header{
   background:var(--card);
   padding:12px;
@@ -118,9 +166,10 @@ button{cursor:pointer}
   box-shadow:var(--shadow);
   font-weight:600;
 }
+
 .chat-window{
   flex:1;
-  background:linear-gradient(#fff,#fcfeff);
+  background:#fcfeff;
   border-radius:10px;
   padding:16px;
   overflow-y:auto;
@@ -129,39 +178,52 @@ button{cursor:pointer}
 
 .msg{
  width:fit-content;
-  padding:5px 7px;
+  padding: 5px 7px 5px 7px;
   border-radius:12px;
   margin-bottom:10px;
   line-height:1.4;
   word-wrap:break-word;
 }
+
 .msg.user{
   margin-left:auto;
   background:var(--accent-2);
   color:white;
   border-bottom-right-radius:4px;
 }
+
 .msg.bot{
   margin-right:auto;
   background:var(--accent);
   color:white;
   border-bottom-left-radius:4px;
 }
-.msg .meta{font-size:11px;color:rgba(255,255,255,0.8);margin-bottom:6px}
+
+.msg .meta{
+  font-size:11px;
+  color:#FFFFFFCC;
+  margin-bottom:6px
+}
 
 .chat-input-area{
   display:flex;
   gap:8px;
   align-items:center;
 }
+
 .chat-input-area input{
   flex:1;
-  padding:10px 12px;
+  padding: 10px 12px 10px 12px;
   border-radius:8px;
   border:1px solid #d0d7de;
 }
-.small{font-size:13px}
-.muted{color:var(--muted)}
+.small{
+  font-size:13px;
+}
+
+.muted{
+  color:var(--muted);
+}
 
 .rate-text {
   font-size: 11px;
@@ -174,8 +236,8 @@ button{cursor:pointer}
 }
 
 .rate-box button {
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.3);
+  background: #FFFFFF33;
+  border: 1px solid #FFFFFF4D;
   color: white;
   font-size: 12px;
   border-radius: 6px;
@@ -185,7 +247,7 @@ button{cursor:pointer}
 }
 
 .rate-box button:hover {
-  background: rgba(255,255,255,0.35);
+  background: #FFFFFF59;
 }
 
 .rate-box button.active {
@@ -193,6 +255,7 @@ button{cursor:pointer}
   color: #000;
   border-color: #fff;
 }
+
 .rate-container {
   margin-top: 15px;
 }

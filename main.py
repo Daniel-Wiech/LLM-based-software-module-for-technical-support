@@ -131,7 +131,6 @@ def generate_response(userinput, conversationid):
 print("Rozpoczynam rozmowę z Asystentem.")
 
 
-
 @app.post("/users/new")
 def create_user(user: UserCreate, auth=Depends(require_role(["admin"]))):
 

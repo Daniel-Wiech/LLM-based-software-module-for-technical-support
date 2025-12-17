@@ -1,17 +1,29 @@
+
+
 const API_BASE = "http://localhost:8080";
+let accessToken = null;
+let refreshToken = null;
+let currentConvId = null;
+const qs = (x) => document.querySelector(x);
+const qsa = (x) => Array.from(document.querySelectorAll(x));
 
+//save tokens in memory
 function saveTokens(access, refresh) {
-  localStorage.setItem("access_token", access);
-  localStorage.setItem("refresh_token", refresh);
+  accessToken = access;
+  refreshToken = refresh;
 }
+//clear all tokens
 function clearTokens() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
+   accessToken = null;
+   refreshToken = null;
 }
-function getAccess() { return localStorage.getItem("access_token"); }
-function getRefresh() { return localStorage.getItem("refresh_token"); }
+//get access token
+function getAccess() { return accessToken; }
 
+//get refresh token
+function getRefresh() { return refreshToken; }
 
+//access token refresh fetch api
 async function apiFetch(path, opts = {}, retry = true) {
   const access = getAccess();
   opts.headers = opts.headers || {};
@@ -26,7 +38,7 @@ async function apiFetch(path, opts = {}, retry = true) {
 
   const res = await fetch(API_BASE + path, opts);
 
-  if (res.status === 401 && retry) {
+  if (res.status === 401 && retry) { //check if access token is valid
     const refresh = getRefresh();
     if (!refresh) {
       clearTokens();
@@ -40,9 +52,7 @@ async function apiFetch(path, opts = {}, retry = true) {
       });
       if (!rr.ok) throw new Error("refresh failed");
       const jr = await rr.json();
-      const newAccess = jr.access_token || jr.result?.access_token;
-      const newRefresh = jr.refresh_token || jr.result?.refresh_token;
-      saveTokens(newAccess, newRefresh || refresh);
+      saveTokens(jr.access_token, jr.refresh_token);
       return apiFetch(path, opts, false);
     } catch (e) {
       clearTokens();
@@ -53,20 +63,21 @@ async function apiFetch(path, opts = {}, retry = true) {
   return res;
 }
 
-const qs = (x) => document.querySelector(x);
-const qsa = (x) => Array.from(document.querySelectorAll(x));
-
+//show Login panel and hide app
 function showLoginPanel() {
   qs("#login-panel").classList.remove("hidden");
   qs("#main-app").classList.add("hidden");
 }
+
+//shop app and hide login panel
 function showMainApp() {
   qs("#login-panel").classList.add("hidden");
   qs("#main-app").classList.remove("hidden");
 }
 
-function renderUserArea() {
-  const ua = qs("#user-area");
+//create logout button and header
+function renderUserLogoutArea() {
+  const ua = qs("#user-login-area");
   ua.innerHTML = "";
   if (!getAccess()) return;
 
@@ -91,26 +102,25 @@ function renderUserArea() {
     qs("#chat-header").textContent = "Wybierz rozmowę";
 
     showLoginPanel();
-    renderUserArea();
+    renderUserLogoutArea();
   };
 
   ua.appendChild(logoutBtn);
 }
 
-
-let currentConvId = null;
-
-async function loadConversations() {
+//get all conversations of currunt logon user
+async function getConversations() {
   try {
     const res = await apiFetch("/conversations", { method: "GET" });
     if (!res.ok) return showLoginPanel();
     const j = await res.json();
     renderConversations(j.conversations || []);
   } catch (e) {
-    console.error("loadConversations error:", e);
+    console.error("getConversations error:", e);
   }
 }
 
+//render all conversations of currunt logon user
 function renderConversations(convs) {
   const list = qs("#conversations-list");
   list.innerHTML = "";
@@ -125,9 +135,7 @@ function renderConversations(convs) {
     el.className = "conv-item";
     el.dataset.id = id;
 
-    el.innerHTML = `
-      <div><strong>Rozmowa z dnia ${new Date(c.created).toLocaleString("pl-PL")}</strong></div>
-    `;
+    el.innerHTML = `<div><b>Rozmowa z dnia ${new Date(c.created).toLocaleString("pl-PL")}</b></div>`;
 
     el.onclick = () => {
       qsa(".conv-item").forEach(x => x.classList.remove("active"));
@@ -145,7 +153,7 @@ function renderConversations(convs) {
   });
 }
 
-
+//open conversation
 async function openConversation(id) {
   currentConvId = id;
   qs("#chat-header").textContent = `Rozmowa:`;
@@ -159,12 +167,13 @@ async function openConversation(id) {
     const history = j.history || [];
 
     history.forEach(row => {
-      if (row.usermessage)
-        appendMsg("user", row.usermessage, row.id, row.rating);
+      if (row.usermessage) {
+        appendMsg("user", row.usermessage, row.id, null);
+      }
 
-      const botText = row.llmmessage ?? row.assistant ?? row.response;
-      if (botText)
-        appendMsg("bot", botText, row.id, row.rating);
+      if (row.llmmessage){
+        appendMsg("bot", row.llmmessage, row.id, row.rating);
+      }
     });
 
     scrollChatToBottom();
@@ -173,6 +182,7 @@ async function openConversation(id) {
   }
 }
 
+//send chatbot response rating
 async function sendRate(historyId, rateValue) {
   try {
     const res = await apiFetch(`/chat/rate/${historyId}`, {
@@ -185,13 +195,14 @@ async function sendRate(historyId, rateValue) {
       return;
     }
 
-    const j = await res.json();
-    console.log("Ocena zapisana:", j);
+    const stat = await res.json();
+    console.log("Ocena zapisana:", stat);
   } catch (e) {
     console.error("sendRate error:", e);
   }
 }
 
+//add message in chat
 function appendMsg(kind, text, historyId = null, rate) {
   const wrap = document.createElement("div");
   wrap.className = `msg ${kind}`;
@@ -236,10 +247,7 @@ if (kind === "bot") {
     rateContainer.appendChild(rateBox);
     wrap.appendChild(rateContainer);
 
-    console.log("appendMsg historyId =", historyId);
-
-    if (historyId !== null && historyId !== undefined) {
-
+    if (historyId != null) {
         up.onclick = () => {
           rateBox.style.display = "none";
             up.classList.add("active");
@@ -272,15 +280,16 @@ if (kind === "bot") {
     }
 }
 
-
   qs("#chat-window").appendChild(wrap);
 }
 
+//scroll chat to bottom
 function scrollChatToBottom() {
   const w = qs("#chat-window");
   w.scrollTop = w.scrollHeight;
 }
 
+//send message to backend
 async function sendChatMessage() {
   const txt = qs("#chat-input").value.trim();
   if (!txt || !currentConvId) return;
@@ -304,11 +313,7 @@ async function sendChatMessage() {
     const j = await res.json();
     placeholder.remove();
 
-    appendMsg(
-      "bot",
-      j.response ?? j.llmmessage ?? j.assistant ?? "Brak odpowiedzi",
-      j.historyid
-    );
+    appendMsg("bot", j.llmmessage, j.historyid, null);
 
     scrollChatToBottom();
   } catch (e) {
@@ -316,17 +321,19 @@ async function sendChatMessage() {
   }
 }
 
+//create new conversation
 async function createNewConversation() {
   try {
     const res = await apiFetch("/conversations/new", { method: "POST" });
     const j = await res.json();
-    await loadConversations();
+    await getConversations();
     openConversation(j.conversation_id);
   } catch (e) {
     alert("Nie można stworzyć konwersacji");
   }
 }
 
+//login
 async function doLogin() {
   const login = qs("#login-login").value.trim();
   const password = qs("#login-password").value.trim();
@@ -350,9 +357,16 @@ async function doLogin() {
     saveTokens(j.result.access_token, j.result.refresh_token);
     qs("#login-msg").textContent = "Zalogowano";
 
-    renderUserArea();
+  
+
+    renderUserLogoutArea();
     showMainApp();
-    await loadConversations();
+    await getConversations();
+
+    qs("#login-login").value = "";
+    qs("#login-password").value = "";
+    qs("#login-msg").textContent = "";
+
   } catch (e) {
     console.error("login error", e);
     qs("#login-msg").textContent = "Błąd logowania";
@@ -371,9 +385,9 @@ function bindUi() {
 window.addEventListener("load", () => {
   bindUi();
   if (getAccess()) {
-    renderUserArea();
+    renderUserLogoutArea();
     showMainApp();
-    loadConversations();
+    getConversations();
   } else {
     showLoginPanel();
   }
