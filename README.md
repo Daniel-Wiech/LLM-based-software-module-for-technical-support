@@ -1,6 +1,6 @@
 # Technical Support Module with LLM Integration
 
-This project implements a **technical support module** using **Large Language Models (LLM)**. It provides a backend API, a frontend interface, Dockerized services, and training scripts for model fine-tuning with LoRA adapters.  
+This project implements a **technical support module** using **Large Language Models (LLM)** and a **PostgreSQL SQL database**. It provides a backend API, a frontend interface, Dockerized services, and includes **training scripts for LoRA-based fine-tuning** of the LLM model. 
 
 ---
 
@@ -15,7 +15,7 @@ This project implements a **technical support module** using **Large Language Mo
 - `requirements.txt` – Python dependencies for Docker and backend.  
 - `schema.sql` – Database schema and initialization scripts.  
 - `servers.json` – Database server definitions for pgAdmin.  
-- `pllum-lora-model/` – Folder containing LoRA adapter for model fine-tuning.
+- `pllum-lora-model/` – Folder containing LoRA adapter.
 
 ### Frontend (`FrontEnd/`)
 
@@ -41,12 +41,27 @@ This project implements a **technical support module** using **Large Language Mo
 
 ## Requirements for Running
 
-Before running the project, you need:
+Before running the project, make sure the following requirements are met:
 
-1. **Model folder:**  
-   - [`models--CYFRAGOVPL--Llama-PLLuM-8B-chat`](https://huggingface.co/CYFRAGOVPL/Llama-PLLuM-8B-chat) containing the chat version of the Plum 8B model (16-bit float).  
+### 0. Docker
 
-2. **Environment file `.env`:**  
+This project uses Docker to run the backend, frontend, and PostgreSQL database services. Ensure that **Docker** and **Docker Compose** are installed on your system.
+
+### 1. Base model
+
+The base LLM model must be downloaded and placed in the following folder within the project root:
+
+- **Folder:** `models--CYFRAGOVPL--Llama-PLLuM-8B-chat`
+- **Model:**  
+  [`models--CYFRAGOVPL--Llama-PLLuM-8B-chat`](https://huggingface.co/CYFRAGOVPL/Llama-PLLuM-8B-chat)
+- **Parameters:** 8 billion (8B)
+- **Type:** Chat version 
+- **Precision:** 16-bit float (bf16)
+- **License:** Llama 3.1 Community License Agreement
+  
+### 2. Environment file `.env`  
+
+Create a `.env` file in the project root directory with the following variables:
 
 ```env
 POSTGRES_HOST=
@@ -62,3 +77,11 @@ PGADMIN_DEFAULT_PASSWORD=
 
 JWT_SECRET=
 JWT_REFRESH_SECRET=
+```
+
+### 3. LoRA adapter
+
+The project also requires a trained **LoRA adapter**:
+
+- **Folder:** `pllum-lora-model/`
+
