@@ -1,5 +1,6 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig
-from modules.db import add_user, add_conversation, add_history, add_history_rate, get_conversations_by_user, get_history, revoke_refresh_token
+from modules.db import add_user, add_conversation, add_history, add_history_rate, get_conversations_by_user, \
+    get_history, revoke_refresh_token, get_conversation_by_history
 from peft import PeftModel
 import torch
 from langchain.memory import ConversationBufferMemory
@@ -13,7 +14,6 @@ import os
 import yaml
 from langdetect import detect
 import uvicorn
-
 
 with open("LLM-config.yml", "r", encoding="utf-8") as file:
     config = yaml.safe_load(file)
@@ -54,11 +54,12 @@ base_model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=bnb_config,
     device_map=device_map,
-    dtype= dtype
+    dtype=dtype
 )
 
 model = PeftModel.from_pretrained(base_model, lora_checkpoint_path)
 pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device_map=device_map)
+
 
 def generate_response(userinput, conversationid):
     if config["history_length"] == "max":
@@ -88,16 +89,20 @@ def generate_response(userinput, conversationid):
     lang = detect(userinput)
     if lang == "pl":
         system_prompt = config["system_prompt_pl"]
+        assistant_tag = "Asystent:"
+        user_tag = "Użytkownik:"
         prompt = (
-            f"{system_prompt}\n"
+            f"System: {system_prompt}\n"
             f"{chathistorytext}"
             f"Użytkownik: {userinput}\n"
             f"Asystent:"
         )
     else:
         system_prompt = config["system_prompt_en"]
+        assistant_tag = "Assistant:"
+        user_tag = "User:"
         prompt = (
-            f"{system_prompt}\n"
+            f"System: {system_prompt}\n"
             f"{chathistorytext}"
             f"User: {userinput}\n"
             f"Assistant:"
@@ -108,19 +113,18 @@ def generate_response(userinput, conversationid):
         do_sample=config["do_sample"],
         temperature=config["temperature"],
         top_p=config["top_p"],
-        repetition_penalty=config["repetition_penalty"],
         eos_token_id=tokenizer.eos_token_id
     )
 
     generatedtext = output[0]["generated_text"]
 
-    if "Asystent:" in generatedtext:
-        assistantreply = generatedtext.split("Asystent:")[-1]
+    if assistant_tag in generatedtext:
+        assistantreply = generatedtext.split(assistant_tag)[-1]
     else:
         assistantreply = generatedtext
 
-    if "Użytkownik:" in assistantreply:
-        assistantreply = assistantreply.split("Użytkownik:")[0]
+    if user_tag in assistantreply:
+        assistantreply = assistantreply.split(user_tag)[0]
 
     reply = assistantreply.strip()
 
@@ -128,12 +132,12 @@ def generate_response(userinput, conversationid):
 
     return reply
 
+
 print("Rozpoczynam rozmowę z Asystentem.")
 
 
 @app.post("/users/new")
 def create_user(user: UserCreate, auth=Depends(require_role(["admin"]))):
-
     newuserid = add_user(
         name=user.name,
         surname=user.surname,
@@ -145,10 +149,12 @@ def create_user(user: UserCreate, auth=Depends(require_role(["admin"]))):
         return {"detail": "User exist in database"}
     return {"user_id": newuserid}
 
+
 @app.post("/login")
 def login_endpoint(credentials: LoginRequest):
     token = login_user(credentials.login, credentials.password)
     return {"result": token}
+
 
 @app.post("/conversations/new")
 def create_conversation(auth=Depends(require_role(["admin", "user"]))):
@@ -156,24 +162,36 @@ def create_conversation(auth=Depends(require_role(["admin", "user"]))):
     convid = add_conversation(userid)
     return {"conversation_id": convid}
 
+
 @app.get("/conversations")
 def get_conversations(auth=Depends(require_role(["admin", "user"]))):
     userid = auth["user_id"]
     return {"conversations": get_conversations_by_user(userid)}
 
+
 @app.get("/history/{conversationid}")
 def get_converastion_history(conversationid: int, auth=Depends(require_role(["admin", "user"]))):
-    return {"history": get_history(conversationid)}
-
-@app.post("/chat/{conversationid}")
-def chat(conversationid: int,msg: Message, auth=Depends(require_role(["admin", "user"]))):
     conversations = get_conversations_by_user(auth["user_id"])
     if not any(conv["user_id"] == auth["user_id"] for conv in conversations):
-        raise HTTPException(status_code=406, detail="Access denied: This user doesn't have permission to this conversation")
+        raise HTTPException(status_code=406,
+                            detail="Access denied: This user doesn't have permission to this conversation")
 
     if not any(conv["id"] == conversationid for conv in conversations):
         raise HTTPException(status_code=406, detail="Access denied")
-    
+
+    return {"history": get_history(conversationid)}
+
+
+@app.post("/chat/{conversationid}")
+def chat(conversationid: int, msg: Message, auth=Depends(require_role(["admin", "user"]))):
+    conversations = get_conversations_by_user(auth["user_id"])
+    if not any(conv["user_id"] == auth["user_id"] for conv in conversations):
+        raise HTTPException(status_code=406,
+                            detail="Access denied: This user doesn't have permission to this conversation")
+
+    if not any(conv["id"] == conversationid for conv in conversations):
+        raise HTTPException(status_code=406, detail="Access denied")
+
     userinput = msg.usermessage
     response = generate_response(userinput, conversationid)
     historyid = add_history(conversationid, userinput, response)
@@ -183,16 +201,33 @@ def chat(conversationid: int,msg: Message, auth=Depends(require_role(["admin", "
         "response": response
     }
 
+
 @app.post("/chat/rate/{historyid}")
 def rate(historyid: int, hist: HistoryRate, auth=Depends(require_role(["admin", "user"]))):
+    conversations = get_conversations_by_user(auth["user_id"])
+    conversationid = get_conversation_by_history(historyid)
+
+    if conversationid is None:
+        raise HTTPException(status_code=406,detail="Access denied")
+
+    if not any(conv["user_id"] == auth["user_id"] for conv in conversations):
+        raise HTTPException(status_code=406,
+                            detail="Access denied: This user doesn't have permission to this conversation")
+
+    if not any(conv["id"] == conversationid["conversation_id"] for conv in conversations):
+        raise HTTPException(status_code=406, detail="Access denied")
+
     countrowsaffected = add_history_rate(historyid, hist.rate)
     return {
         "historyid": historyid,
         "countrowsaffected": countrowsaffected
     }
+
+
 @app.post("/refresh")
 def refresh(req: RefreshRequest):
     return new_access_token(req.refreshtoken)
+
 
 @app.post("/logout")
 def logout(req: RefreshRequest):
@@ -202,9 +237,12 @@ def logout(req: RefreshRequest):
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     return {"detail": "Logged out successfully"}
+
+
 @app.get("/healthcheck")
 def healthcheck():
     return {"status": "ready"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -313,7 +313,7 @@ async function sendChatMessage() {
     const j = await res.json();
     placeholder.remove();
 
-    appendMsg("bot", j.llmmessage, j.historyid, null);
+    appendMsg("bot", j.response, j.historyid, null);
 
     scrollChatToBottom();
   } catch (e) {

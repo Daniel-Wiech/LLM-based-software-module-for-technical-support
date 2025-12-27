@@ -154,6 +154,20 @@ def get_history(conversationid: int):
     conn.close()
     return history
 
+#returns conversation id by history id
+def get_conversation_by_history(historyid: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, conversation_id FROM history WHERE id = (%s)",
+        (historyid,)
+    )
+    history = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+    return history
+
 #no return
 def add_refresh_token(userid: int, token: str, expiredat: datetime):
     conn = get_connection()
@@ -170,7 +184,7 @@ def get_refresh_token(token: str):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT id, token, created_at, expires_at, revoked FROM refresh_tokens WHERE token = %s ORDER BY created_at DESC;",
+        "SELECT id, user_id, token, created_at, expires_at, revoked FROM refresh_tokens WHERE token = %s ORDER BY created_at DESC;",
          (token,))
     refreshtoken = cur.fetchone()
     conn.commit()
